@@ -1,6 +1,6 @@
 module github.com/anto1290/qlxion-monorepo/api-gateway
 
-go 1.23
+go 1.25
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.0

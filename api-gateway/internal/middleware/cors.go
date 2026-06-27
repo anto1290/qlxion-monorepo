@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qlxion/qlxion-monorepo/api-gateway/internal/config"
+	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/config"
 )
 
 // CORS middleware handles Cross-Origin Resource Sharing
