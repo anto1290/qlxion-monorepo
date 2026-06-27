@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
+	appErrors "github.com/anto1290/qlxion-monorepo/pkg/errors"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository"
 	"github.com/google/uuid"
-	appErrors "github.com/qlxion/qlxion-monorepo/pkg/errors"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/repository"
 )
 
 // TenantUsecase handles tenant management business logic
