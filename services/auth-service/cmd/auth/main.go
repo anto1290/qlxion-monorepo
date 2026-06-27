@@ -9,15 +9,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/qlxion/qlxion-monorepo/pkg/auth"
-	"github.com/qlxion/qlxion-monorepo/pkg/database"
-	"github.com/qlxion/qlxion-monorepo/pkg/logger"
-	"github.com/qlxion/qlxion-monorepo/pkg/response"
-	handler "github.com/qlxion/qlxion-monorepo/services/auth-service/internal/delivery/http"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/repository/postgres"
-	redisRepo "github.com/qlxion/qlxion-monorepo/services/auth-service/internal/repository/redis"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/usecase"
-	"github.com/redis/go-redis/v9"
+	"github.com/anto1290/qlxion-monorepo/pkg/auth"
+	"github.com/anto1290/qlxion-monorepo/pkg/database"
+	"github.com/anto1290/qlxion-monorepo/pkg/logger"
+	"github.com/anto1290/qlxion-monorepo/pkg/response"
+	handler "github.com/anto1290/qlxion-monorepo/services/auth-service/internal/delivery/http"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository/postgres"
+	redisRepo "github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository/redis"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/usecase"
 )
 
 func main() {
@@ -114,13 +113,13 @@ func main() {
 
 	// Setup middleware chain
 	var handler http.Handler = mux
-	
+
 	// Recovery middleware
 	handler = recoveryMiddleware(log)(handler)
-	
+
 	// Request logging
 	handler = requestLoggerMiddleware(log)(handler)
-	
+
 	// CORS
 	handler = corsMiddleware()(handler)
 

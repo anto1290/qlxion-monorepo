@@ -3,7 +3,6 @@ package proxy
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -11,7 +10,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/qlxion/qlxion-monorepo/api-gateway/internal/config"
+	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/config"
 	"github.com/rs/zerolog/log"
 )
 
@@ -42,9 +41,9 @@ type ProxyResponse struct {
 func NewReverseProxy(cfg config.GatewayConfig, services []config.Service) *ReverseProxy {
 	client := &http.Client{
 		Transport: &http.Transport{
-			MaxIdleConns:        cfg.MaxIdleConns,
-			MaxConnsPerHost:     cfg.MaxConnsPerHost,
-			IdleConnTimeout:     90 * time.Second,
+			MaxIdleConns:    cfg.MaxIdleConns,
+			MaxConnsPerHost: cfg.MaxConnsPerHost,
+			IdleConnTimeout: 90 * time.Second,
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 30 * time.Second,
@@ -60,14 +59,14 @@ func NewReverseProxy(cfg config.GatewayConfig, services []config.Service) *Rever
 		if protocol == "" {
 			protocol = "http"
 		}
-		
+
 		baseURL := fmt.Sprintf("%s://%s:%d", protocol, svc.Host, svc.Port)
 		svcMap[svc.Name] = &ServiceProxy{
 			Name:    svc.Name,
 			BaseURL: baseURL,
 			Client:  client,
 		}
-		
+
 		log.Info().
 			Str("service", svc.Name).
 			Str("url", baseURL).

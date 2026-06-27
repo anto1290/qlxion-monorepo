@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/qlxion/qlxion-monorepo/pkg/auth"
-	"github.com/qlxion/qlxion-monorepo/pkg/response"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/usecase"
+	"github.com/anto1290/qlxion-monorepo/pkg/auth"
+	"github.com/anto1290/qlxion-monorepo/pkg/response"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/usecase"
 )
 
 // AuthHandler handles authentication HTTP requests

@@ -6,11 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/redis/go-redis/v9"
-	"github.com/qlxion/qlxion-monorepo/api-gateway/internal/config"
-	"github.com/qlxion/qlxion-monorepo/pkg/response"
 	"context"
 	"encoding/json"
+
+	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/config"
+	"github.com/anto1290/qlxion-monorepo/pkg/response"
+	"github.com/redis/go-redis/v9"
 )
 
 // RateLimiter handles rate limiting using sliding window algorithm
@@ -33,10 +34,10 @@ func NewRateLimiter(redis *redis.Client, cfg config.RateLimitConfig) *RateLimite
 		config:     cfg,
 		localCache: make(map[string]*localCounter),
 	}
-	
+
 	// Start cleanup goroutine
 	go rl.cleanupLoop()
-	
+
 	return rl
 }
 
@@ -70,7 +71,7 @@ func (rl *RateLimiter) Middleware(rps int, burst int, window time.Duration) func
 			if !allowed {
 				w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", rps))
 				w.Header().Set("X-RateLimit-Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
-				
+
 				resp := response.Fail(nil, "Rate limit exceeded. Please try again later.")
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusTooManyRequests)
@@ -105,7 +106,7 @@ func (rl *RateLimiter) isAllowedRedis(ctx context.Context, key string, rps, burs
 	pipe := rl.redis.Pipeline()
 	pipe.ZRemRangeByScore(ctx, redisKey, "0", fmt.Sprintf("%d", windowStart))
 	pipe.ZCard(ctx, redisKey)
-	
+
 	results, err := pipe.Exec(ctx)
 	if err != nil {
 		// On Redis error, allow the request (fail open) or use local fallback
@@ -113,7 +114,7 @@ func (rl *RateLimiter) isAllowedRedis(ctx context.Context, key string, rps, burs
 	}
 
 	currentCount := results[1].(*redis.IntCmd).Val()
-	
+
 	if int(currentCount) >= burst {
 		// Get oldest entry for retry-after calculation
 		oldest, _ := rl.redis.ZRangeWithScores(ctx, redisKey, 0, 0).Result()

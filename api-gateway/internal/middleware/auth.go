@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/qlxion/qlxion-monorepo/api-gateway/internal/config"
-	"github.com/qlxion/qlxion-monorepo/pkg/auth"
-	"github.com/qlxion/qlxion-monorepo/pkg/response"
+	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/config"
+	"github.com/anto1290/qlxion-monorepo/pkg/auth"
+	"github.com/anto1290/qlxion-monorepo/pkg/response"
 )
 
 // Auth middleware validates JWT tokens

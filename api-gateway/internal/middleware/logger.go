@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/anto1290/qlxion-monorepo/pkg/logger"
 	"github.com/google/uuid"
-	"github.com/qlxion/qlxion-monorepo/pkg/logger"
 )
 
 // RequestLogger middleware logs HTTP requests

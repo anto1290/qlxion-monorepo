@@ -3,11 +3,12 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
 )
 
 // SessionRepo implements SessionRepository
@@ -27,7 +28,7 @@ func (r *SessionRepo) Create(ctx context.Context, session *domain.Session) error
 			device_type, ip_address, user_agent, expires_at, revoked_at, last_activity_at, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		session.ID, session.UserID, session.RefreshTokenHash, session.AccessTokenID,
 		session.DeviceName, session.DeviceType, session.IPAddress,
@@ -45,7 +46,7 @@ func (r *SessionRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Sessio
 			last_activity_at, created_at, updated_at
 		FROM sessions WHERE id = $1
 	`
-	
+
 	session := &domain.Session{}
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&session.ID, &session.UserID, &session.RefreshTokenHash, &session.AccessTokenID,
@@ -70,7 +71,7 @@ func (r *SessionRepo) GetByRefreshTokenHash(ctx context.Context, hash string) (*
 			last_activity_at, created_at, updated_at
 		FROM sessions WHERE refresh_token_hash = $1 AND (revoked_at IS NULL AND expires_at > NOW())
 	`
-	
+
 	session := &domain.Session{}
 	err := r.db.QueryRow(ctx, query, hash).Scan(
 		&session.ID, &session.UserID, &session.RefreshTokenHash, &session.AccessTokenID,
@@ -170,7 +171,7 @@ func (r *SessionRepo) Revoke(ctx context.Context, id uuid.UUID) error {
 func (r *SessionRepo) RevokeAllUserSessions(ctx context.Context, userID uuid.UUID, exceptSessionID *uuid.UUID) error {
 	var query string
 	var args []interface{}
-	
+
 	if exceptSessionID != nil {
 		query = `UPDATE sessions SET revoked_at = NOW(), updated_at = NOW() 
 			WHERE user_id = $1 AND id != $2 AND revoked_at IS NULL`
@@ -180,7 +181,7 @@ func (r *SessionRepo) RevokeAllUserSessions(ctx context.Context, userID uuid.UUI
 			WHERE user_id = $1 AND revoked_at IS NULL`
 		args = append(args, userID)
 	}
-	
+
 	_, err := r.db.Exec(ctx, query, args...)
 	return err
 }
@@ -201,7 +202,7 @@ func (r *SessionRepo) CreateClient(ctx context.Context, client *domain.Client) e
 			grant_types, scope, is_active, access_token_ttl, refresh_token_ttl, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		client.ID, client.TenantID, client.ClientID, client.ClientSecretHash,
 		client.Name, client.RedirectURIs, client.GrantTypes, client.Scope,
@@ -218,7 +219,7 @@ func (r *SessionRepo) GetClientByClientID(ctx context.Context, clientID string) 
 			grant_types, scope, is_active, access_token_ttl, refresh_token_ttl, created_at, updated_at
 		FROM clients WHERE client_id = $1 AND is_active = true
 	`
-	
+
 	client := &domain.Client{}
 	err := r.db.QueryRow(ctx, query, clientID).Scan(
 		&client.ID, &client.TenantID, &client.ClientID, &client.ClientSecretHash,
@@ -244,7 +245,7 @@ func (r *SessionRepo) CreateIdentityProvider(ctx context.Context, provider *doma
 			authorization_endpoint, token_endpoint, userinfo_endpoint, scopes, is_active, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		provider.ID, provider.TenantID, provider.Provider, provider.ClientID,
 		provider.ClientSecret, provider.AuthorizationEndpoint, provider.TokenEndpoint,
@@ -261,7 +262,7 @@ func (r *SessionRepo) GetIdentityProvidersByTenant(ctx context.Context, tenantID
 			authorization_endpoint, token_endpoint, userinfo_endpoint, scopes, is_active, created_at, updated_at
 		FROM identity_providers WHERE tenant_id = $1 AND is_active = true
 	`
-	
+
 	rows, err := r.db.Query(ctx, query, tenantID)
 	if err != nil {
 		return nil, err
@@ -293,7 +294,7 @@ func (r *SessionRepo) GetIdentityProviderByTenantAndProvider(ctx context.Context
 			authorization_endpoint, token_endpoint, userinfo_endpoint, scopes, is_active, created_at, updated_at
 		FROM identity_providers WHERE tenant_id = $1 AND provider = $2 AND is_active = true
 	`
-	
+
 	var ip domain.IdentityProvider
 	err := r.db.QueryRow(ctx, query, tenantID, provider).Scan(
 		&ip.ID, &ip.TenantID, &ip.Provider, &ip.ClientID,

@@ -1,4 +1,4 @@
-module github.com/qlxion/qlxion-monorepo/api-gateway
+module github.com/anto1290/qlxion-monorepo/api-gateway
 
 go 1.23
 

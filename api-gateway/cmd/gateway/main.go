@@ -9,12 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/qlxion/qlxion-monorepo/api-gateway/internal/aggregator"
-	"github.com/qlxion/qlxion-monorepo/api-gateway/internal/config"
-	"github.com/qlxion/qlxion-monorepo/api-gateway/internal/middleware"
-	"github.com/qlxion/qlxion-monorepo/api-gateway/internal/proxy"
-	"github.com/qlxion/qlxion-monorepo/pkg/logger"
-	"github.com/qlxion/qlxion-monorepo/pkg/response"
+	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/aggregator"
+	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/config"
+	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/middleware"
+	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/proxy"
+	"github.com/anto1290/qlxion-monorepo/pkg/logger"
+	"github.com/anto1290/qlxion-monorepo/pkg/response"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -90,12 +90,12 @@ func main() {
 	for _, svc := range cfg.Services {
 		for _, endpoint := range svc.Endpoints {
 			route := fmt.Sprintf("%s %s", endpoint.Method, endpoint.Path)
-			
+
 			handler := createEndpointHandler(rp, agg, svc.Name, endpoint)
-			
+
 			// Apply middleware chain
 			var wrappedHandler http.Handler = http.HandlerFunc(handler)
-			
+
 			// Apply rate limiting if configured
 			if endpoint.RateLimit != nil {
 				wrappedHandler = rateLimiter.Middleware(
@@ -104,24 +104,24 @@ func main() {
 					endpoint.RateLimit.Window,
 				)(wrappedHandler)
 			}
-			
+
 			// Apply auth if required
 			if endpoint.RequiresAuth && cfg.Gateway.EnableAuth {
 				wrappedHandler = middleware.Auth(cfg.JWT)(wrappedHandler)
 			}
-			
+
 			router.Handle(route, wrappedHandler)
 		}
 	}
 
 	// Create server with middleware chain
 	var handler http.Handler = router
-	
+
 	// Apply global middleware
 	handler = middleware.RequestLogger(log)(handler)
 	handler = middleware.CORS(cfg.CORS)(handler)
 	handler = rateLimiter.GlobalRateLimit()(handler)
-	
+
 	// Recovery middleware
 	handler = recoveryMiddleware(log)(handler)
 
@@ -140,7 +140,7 @@ func main() {
 			Str("addr", addr).
 			Str("name", cfg.Gateway.Name).
 			Msg("API Gateway starting")
-		
+
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal().Err(err).Msg("Server failed to start")
 		}
@@ -179,7 +179,7 @@ func createEndpointHandler(
 		// Forward request to backend
 		pr, err := rp.Forward(r.Context(), serviceName, endpoint.BackendPath, r)
 		if err != nil {
-			response.JSONError(w, response.New(response.ErrServiceUnavailable, 
+			response.JSONError(w, response.New(response.ErrServiceUnavailable,
 				fmt.Sprintf("Service '%s' unavailable", serviceName)).WithError(err))
 			return
 		}
@@ -207,7 +207,7 @@ func recoveryMiddleware(log *logger.Logger) func(http.Handler) http.Handler {
 						Str("path", r.URL.Path).
 						Str("method", r.Method).
 						Msg("Panic recovered")
-					
+
 					response.JSONError(w, response.New(response.ErrInternal, "Internal server error"))
 				}
 			}()
