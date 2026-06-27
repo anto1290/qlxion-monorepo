@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
 )
 
 // TenantRepo implements TenantRepository
@@ -28,7 +28,7 @@ func (r *TenantRepo) Create(ctx context.Context, tenant *domain.Tenant) error {
 		INSERT INTO tenants (id, code, name, domain, config, status, created_by, updated_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		tenant.ID, tenant.Code, tenant.Name, tenant.Domain,
 		tenant.Config, tenant.Status, tenant.CreatedBy, tenant.UpdatedBy,
@@ -44,7 +44,7 @@ func (r *TenantRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Tenant,
 			created_by, updated_by, created_at, updated_at, deleted_at
 		FROM tenants WHERE id = $1 AND deleted_at IS NULL
 	`
-	
+
 	tenant := &domain.Tenant{}
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&tenant.ID, &tenant.Code, &tenant.Name, &tenant.Domain,
@@ -67,7 +67,7 @@ func (r *TenantRepo) GetByCode(ctx context.Context, code string) (*domain.Tenant
 			created_by, updated_by, created_at, updated_at, deleted_at
 		FROM tenants WHERE code = $1 AND deleted_at IS NULL
 	`
-	
+
 	tenant := &domain.Tenant{}
 	err := r.db.QueryRow(ctx, query, code).Scan(
 		&tenant.ID, &tenant.Code, &tenant.Name, &tenant.Domain,
@@ -90,7 +90,7 @@ func (r *TenantRepo) GetByDomain(ctx context.Context, domain string) (*domain.Te
 			created_by, updated_by, created_at, updated_at, deleted_at
 		FROM tenants WHERE domain = $1 AND deleted_at IS NULL
 	`
-	
+
 	tenant := &domain.Tenant{}
 	err := r.db.QueryRow(ctx, query, domain).Scan(
 		&tenant.ID, &tenant.Code, &tenant.Name, &tenant.Domain,
@@ -192,7 +192,7 @@ func (r *TenantRepo) Update(ctx context.Context, tenant *domain.Tenant) error {
 			status = $5, updated_by = $6, updated_at = $7
 		WHERE id = $8 AND deleted_at IS NULL
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		tenant.Code, tenant.Name, tenant.Domain, tenant.Config,
 		tenant.Status, tenant.UpdatedBy, time.Now(), tenant.ID,
@@ -207,7 +207,7 @@ func (r *TenantRepo) Delete(ctx context.Context, id uuid.UUID, deletedBy uuid.UU
 			status = $1, updated_by = $2, updated_at = $3, deleted_at = $4
 		WHERE id = $5 AND deleted_at IS NULL
 	`
-	
+
 	now := time.Now()
 	_, err := r.db.Exec(ctx, query,
 		domain.TenantStatusInactive, deletedBy, now, now, id,

@@ -4,17 +4,17 @@ import (
 	"context"
 	"time"
 
+	appErrors "github.com/anto1290/qlxion-monorepo/pkg/errors"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository"
 	"github.com/google/uuid"
-	appErrors "github.com/qlxion/qlxion-monorepo/pkg/errors"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/repository"
 )
 
 // RoleUsecase handles role and permission management business logic
 type RoleUsecase struct {
-	roleRepo   repository.RoleRepository
-	userRepo   repository.UserRepository
-	auditRepo  repository.AuditRepository
+	roleRepo  repository.RoleRepository
+	userRepo  repository.UserRepository
+	auditRepo repository.AuditRepository
 }
 
 // NewRoleUsecase creates a new RoleUsecase
@@ -24,9 +24,9 @@ func NewRoleUsecase(
 	auditRepo repository.AuditRepository,
 ) *RoleUsecase {
 	return &RoleUsecase{
-		roleRepo:   roleRepo,
-		userRepo:   userRepo,
-		auditRepo:  auditRepo,
+		roleRepo:  roleRepo,
+		userRepo:  userRepo,
+		auditRepo: auditRepo,
 	}
 }
 
@@ -67,7 +67,7 @@ func (u *RoleUsecase) CreateRole(ctx context.Context, req CreateRoleRequest) (*d
 
 	// Log audit
 	u.logAudit(ctx, domain.AuditActionPermissionChange, req.CreatedBy, req.TenantID, map[string]interface{}{
-		"action":   "create_role",
+		"action":    "create_role",
 		"role_code": req.Code,
 	})
 
@@ -188,8 +188,8 @@ func (u *RoleUsecase) AssignPermission(ctx context.Context, roleID, permissionID
 
 	// Log audit
 	u.logAudit(ctx, domain.AuditActionPermissionChange, assignedBy, nil, map[string]interface{}{
-		"action":       "assign_permission",
-		"role_id":      roleID,
+		"action":        "assign_permission",
+		"role_id":       roleID,
 		"permission_id": permissionID,
 	})
 

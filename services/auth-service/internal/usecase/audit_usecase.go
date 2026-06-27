@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/repository"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository"
 )
 
 // AuditUsecase handles audit log business logic

@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
 )
 
 // UserRepo implements UserRepository
@@ -29,7 +29,7 @@ func (r *UserRepo) Create(ctx context.Context, user *domain.User) error {
 			is_email_verified, is_phone_verified, status, created_by, updated_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		user.ID, user.TenantID, user.FullName, user.Email, user.Username,
 		user.Phone, user.AvatarURL, user.IsEmailVerified, user.IsPhoneVerified,
@@ -46,7 +46,7 @@ func (r *UserRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, err
 			created_by, updated_by, created_at, updated_at, deleted_at
 		FROM users WHERE id = $1 AND deleted_at IS NULL
 	`
-	
+
 	user := &domain.User{}
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&user.ID, &user.TenantID, &user.FullName, &user.Email, &user.Username,
@@ -71,7 +71,7 @@ func (r *UserRepo) GetByEmail(ctx context.Context, email string) (*domain.User, 
 			created_by, updated_by, created_at, updated_at, deleted_at
 		FROM users WHERE email = $1 AND deleted_at IS NULL
 	`
-	
+
 	user := &domain.User{}
 	err := r.db.QueryRow(ctx, query, email).Scan(
 		&user.ID, &user.TenantID, &user.FullName, &user.Email, &user.Username,
@@ -96,7 +96,7 @@ func (r *UserRepo) GetByUsername(ctx context.Context, username string) (*domain.
 			created_by, updated_by, created_at, updated_at, deleted_at
 		FROM users WHERE username = $1 AND deleted_at IS NULL
 	`
-	
+
 	user := &domain.User{}
 	err := r.db.QueryRow(ctx, query, username).Scan(
 		&user.ID, &user.TenantID, &user.FullName, &user.Email, &user.Username,
@@ -121,7 +121,7 @@ func (r *UserRepo) GetByEmailAndTenant(ctx context.Context, email string, tenant
 			created_by, updated_by, created_at, updated_at, deleted_at
 		FROM users WHERE email = $1 AND tenant_id = $2 AND deleted_at IS NULL
 	`
-	
+
 	user := &domain.User{}
 	err := r.db.QueryRow(ctx, query, email, tenantID).Scan(
 		&user.ID, &user.TenantID, &user.FullName, &user.Email, &user.Username,
@@ -238,7 +238,7 @@ func (r *UserRepo) Update(ctx context.Context, user *domain.User) error {
 			status = $8, updated_by = $9, updated_at = $10
 		WHERE id = $11 AND deleted_at IS NULL
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		user.FullName, user.Email, user.Username, user.Phone,
 		user.AvatarURL, user.IsEmailVerified, user.IsPhoneVerified,
@@ -254,7 +254,7 @@ func (r *UserRepo) Delete(ctx context.Context, id uuid.UUID, deletedBy uuid.UUID
 			status = $1, updated_by = $2, updated_at = $3, deleted_at = $4
 		WHERE id = $5 AND deleted_at IS NULL
 	`
-	
+
 	now := time.Now()
 	_, err := r.db.Exec(ctx, query,
 		domain.UserStatusBlocked, deletedBy, now, now, id,
@@ -277,7 +277,7 @@ func (r *UserRepo) CreateCredential(ctx context.Context, cred *domain.Credential
 			provider_data, is_active, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		cred.ID, cred.UserID, cred.Type, cred.CredentialHash,
 		cred.ProviderUserID, cred.ProviderData, cred.IsActive,
@@ -293,7 +293,7 @@ func (r *UserRepo) GetCredentialsByUserID(ctx context.Context, userID uuid.UUID)
 			provider_data, is_active, last_used_at, created_at, updated_at
 		FROM user_credentials WHERE user_id = $1 ORDER BY created_at DESC
 	`
-	
+
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -325,7 +325,7 @@ func (r *UserRepo) GetActiveCredentialByType(ctx context.Context, userID uuid.UU
 		FROM user_credentials WHERE user_id = $1 AND type = $2 AND is_active = true
 		ORDER BY created_at DESC LIMIT 1
 	`
-	
+
 	var cred domain.Credential
 	err := r.db.QueryRow(ctx, query, userID, credType).Scan(
 		&cred.ID, &cred.UserID, &cred.Type, &cred.CredentialHash,
@@ -348,7 +348,7 @@ func (r *UserRepo) UpdateCredential(ctx context.Context, cred *domain.Credential
 			credential_hash = $1, is_active = $2, last_used_at = $3, updated_at = $4
 		WHERE id = $5
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		cred.CredentialHash, cred.IsActive, cred.LastUsedAt,
 		time.Now(), cred.ID,
@@ -363,7 +363,7 @@ func (r *UserRepo) GetProfileByUserID(ctx context.Context, userID uuid.UUID) (*d
 			date_of_birth, mobile, address, zip_code, extras
 		FROM profile WHERE user_id = $1
 	`
-	
+
 	var profile domain.Profile
 	err := r.db.QueryRow(ctx, query, userID).Scan(
 		&profile.ID, &profile.Avatar, &profile.UserID, &profile.FullName,
@@ -392,7 +392,7 @@ func (r *UserRepo) CreateOrUpdateProfile(ctx context.Context, profile *domain.Pr
 			address = EXCLUDED.address, zip_code = EXCLUDED.zip_code,
 			extras = EXCLUDED.extras
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		profile.ID, profile.Avatar, profile.UserID, profile.FullName,
 		profile.NIKNumber, profile.PlaceBirth, profile.DateOfBirth,
@@ -407,7 +407,7 @@ func (r *UserRepo) GetAttributesByUserID(ctx context.Context, userID uuid.UUID) 
 		SELECT id, user_id, key, value, created_at, updated_at
 		FROM user_attributes WHERE user_id = $1
 	`
-	
+
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -435,7 +435,7 @@ func (r *UserRepo) SetAttribute(ctx context.Context, attr *domain.Attribute) err
 		ON CONFLICT (user_id, key) DO UPDATE SET
 			value = EXCLUDED.value, updated_at = EXCLUDED.updated_at
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		attr.ID, attr.UserID, attr.Key, attr.Value, attr.CreatedAt, attr.UpdatedAt,
 	)

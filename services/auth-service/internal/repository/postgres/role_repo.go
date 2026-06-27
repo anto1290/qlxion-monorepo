@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
 )
 
 // RoleRepo implements RoleRepository
@@ -27,7 +27,7 @@ func (r *RoleRepo) Create(ctx context.Context, role *domain.Role) error {
 		INSERT INTO roles (id, tenant_id, code, name, description, is_system_defined, status, created_by, updated_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		role.ID, role.TenantID, role.Code, role.Name, role.Description,
 		role.IsSystemDefined, role.Status, role.CreatedBy, role.UpdatedBy,
@@ -43,7 +43,7 @@ func (r *RoleRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Role, err
 			created_by, updated_by, created_at, updated_at
 		FROM roles WHERE id = $1
 	`
-	
+
 	role := &domain.Role{}
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&role.ID, &role.TenantID, &role.Code, &role.Name, &role.Description,
@@ -63,7 +63,7 @@ func (r *RoleRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Role, err
 func (r *RoleRepo) GetByCode(ctx context.Context, code string, tenantID *uuid.UUID) (*domain.Role, error) {
 	var query string
 	var args []interface{}
-	
+
 	if tenantID != nil {
 		query = `SELECT id, tenant_id, code, name, description, is_system_defined, status,
 			created_by, updated_by, created_at, updated_at
@@ -75,7 +75,7 @@ func (r *RoleRepo) GetByCode(ctx context.Context, code string, tenantID *uuid.UU
 			FROM roles WHERE code = $1 AND tenant_id IS NULL`
 		args = append(args, code)
 	}
-	
+
 	role := &domain.Role{}
 	err := r.db.QueryRow(ctx, query, args...).Scan(
 		&role.ID, &role.TenantID, &role.Code, &role.Name, &role.Description,
@@ -182,7 +182,7 @@ func (r *RoleRepo) Update(ctx context.Context, role *domain.Role) error {
 			code = $1, name = $2, description = $3, status = $4, updated_by = $5, updated_at = $6
 		WHERE id = $7 AND is_system_defined = false
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		role.Code, role.Name, role.Description, role.Status,
 		role.UpdatedBy, role.UpdatedAt, role.ID,
@@ -205,7 +205,7 @@ func (r *RoleRepo) GetPermissionsByRoleID(ctx context.Context, roleID uuid.UUID)
 		INNER JOIN role_permissions rp ON p.id = rp.permission_id
 		WHERE rp.role_id = $1
 	`
-	
+
 	rows, err := r.db.Query(ctx, query, roleID)
 	if err != nil {
 		return nil, err
@@ -235,7 +235,7 @@ func (r *RoleRepo) AssignPermission(ctx context.Context, roleID, permissionID uu
 		VALUES ($1, $2, NOW(), $3)
 		ON CONFLICT (role_id, permission_id) DO NOTHING
 	`
-	
+
 	_, err := r.db.Exec(ctx, query, roleID, permissionID, assignedBy)
 	return err
 }
@@ -253,7 +253,7 @@ func (r *RoleRepo) GetAllPermissions(ctx context.Context) ([]domain.Permission, 
 		SELECT id, resource, action, description, is_system_defined, created_at
 		FROM permissions ORDER BY resource, action
 	`
-	
+
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -282,7 +282,7 @@ func (r *RoleRepo) CreatePermission(ctx context.Context, perm *domain.Permission
 		INSERT INTO permissions (id, resource, action, description, is_system_defined, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		perm.ID, perm.Resource, perm.Action, perm.Description,
 		perm.IsSystemDefined, perm.CreatedAt,
@@ -300,7 +300,7 @@ func (r *RoleRepo) GetRolesByUserID(ctx context.Context, userID uuid.UUID) ([]do
 		WHERE ur.user_id = $1 AND r.status = $2
 		AND (ur.expires_at IS NULL OR ur.expires_at > NOW())
 	`
-	
+
 	rows, err := r.db.Query(ctx, query, userID, domain.RoleStatusActive)
 	if err != nil {
 		return nil, err
@@ -334,7 +334,7 @@ func (r *RoleRepo) AssignRoleToUser(ctx context.Context, userID, roleID uuid.UUI
 			assigned_by = EXCLUDED.assigned_by,
 			expires_at = EXCLUDED.expires_at
 	`
-	
+
 	_, err := r.db.Exec(ctx, query, userID, roleID, assignedBy, nil)
 	return err
 }
@@ -356,7 +356,7 @@ func (r *RoleRepo) GetUserPermissions(ctx context.Context, userID uuid.UUID) ([]
 		WHERE ur.user_id = $1
 		AND (ur.expires_at IS NULL OR ur.expires_at > NOW())
 	`
-	
+
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err

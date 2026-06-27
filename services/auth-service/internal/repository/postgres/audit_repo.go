@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
 )
 
 // AuditRepo implements AuditRepository
@@ -27,7 +27,7 @@ func (r *AuditRepo) Create(ctx context.Context, log *domain.AuditLog) error {
 		INSERT INTO audit_logs (id, tenant_id, user_id, action, resource, resource_id, details, ip_address, user_agent, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
-	
+
 	_, err := r.db.Exec(ctx, query,
 		log.ID, log.TenantID, log.UserID, log.Action,
 		log.Resource, log.ResourceID, log.Details,
@@ -143,7 +143,7 @@ func (r *AuditRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.AuditLog
 			ip_address, user_agent, created_at
 		FROM audit_logs WHERE id = $1
 	`
-	
+
 	log := &domain.AuditLog{}
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&log.ID, &log.TenantID, &log.UserID, &log.Action,

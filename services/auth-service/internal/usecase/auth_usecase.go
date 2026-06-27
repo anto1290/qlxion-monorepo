@@ -8,11 +8,11 @@ import (
 	"net"
 	"time"
 
+	"github.com/anto1290/qlxion-monorepo/pkg/auth"
+	appErrors "github.com/anto1290/qlxion-monorepo/pkg/errors"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository"
 	"github.com/google/uuid"
-	"github.com/qlxion/qlxion-monorepo/pkg/auth"
-	appErrors "github.com/qlxion/qlxion-monorepo/pkg/errors"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -266,12 +266,12 @@ func (u *AuthUsecase) RefreshToken(ctx context.Context, req domain.RefreshTokenR
 
 	// Generate new token pair
 	claims := auth.Claims{
-		UserID:   user.ID,
-		TenantID: user.TenantID,
-		Email:    user.Email,
-		Roles:    roleCodes(roles),
+		UserID:      user.ID,
+		TenantID:    user.TenantID,
+		Email:       user.Email,
+		Roles:       roleCodes(roles),
 		Permissions: permissionStrings(permissions),
-		SessionID: session.ID,
+		SessionID:   session.ID,
 	}
 
 	accessToken, err := auth.GenerateAccessToken(claims, u.jwtConfig.AccessTokenSecret, u.jwtConfig.AccessTokenTTL)
@@ -289,7 +289,7 @@ func (u *AuthUsecase) RefreshToken(ctx context.Context, req domain.RefreshTokenR
 	session.RefreshTokenHash = hex.EncodeToString(newHash[:])
 	session.AccessTokenID = &claims.ID
 	session.UpdateActivity()
-	
+
 	if err := u.sessionRepo.Create(ctx, session); err != nil {
 		return nil, appErrors.Wrap(appErrors.ErrInternal, "Failed to update session", err)
 	}
@@ -468,14 +468,20 @@ func (u *AuthUsecase) logAudit(ctx context.Context, action domain.AuditAction, u
 
 	// Parse IP
 	parsedIP := net.ParseIP(ip)
-	
+
 	log := &domain.AuditLog{
-		ID:        uuid.New(),
-		TenantID:  tenantID,
-		UserID:    &user.ID,
-		Action:    action,
-		Details:   details,
-		IPAddress: func() *string { if parsedIP != nil { s := parsedIP.String(); return &s }; return nil }(),
+		ID:       uuid.New(),
+		TenantID: tenantID,
+		UserID:   &user.ID,
+		Action:   action,
+		Details:  details,
+		IPAddress: func() *string {
+			if parsedIP != nil {
+				s := parsedIP.String()
+				return &s
+			}
+			return nil
+		}(),
 		CreatedAt: time.Now(),
 	}
 

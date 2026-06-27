@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 
+	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
 	"github.com/google/uuid"
-	"github.com/qlxion/qlxion-monorepo/services/auth-service/internal/domain"
 )
 
 // UserRepository defines user repository operations
@@ -18,17 +18,17 @@ type UserRepository interface {
 	Update(ctx context.Context, user *domain.User) error
 	Delete(ctx context.Context, id uuid.UUID, deletedBy uuid.UUID) error
 	UpdateLastLogin(ctx context.Context, id uuid.UUID) error
-	
+
 	// Credential operations
 	CreateCredential(ctx context.Context, cred *domain.Credential) error
 	GetCredentialsByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Credential, error)
 	GetActiveCredentialByType(ctx context.Context, userID uuid.UUID, credType domain.CredentialType) (*domain.Credential, error)
 	UpdateCredential(ctx context.Context, cred *domain.Credential) error
-	
+
 	// Profile operations
 	GetProfileByUserID(ctx context.Context, userID uuid.UUID) (*domain.Profile, error)
 	CreateOrUpdateProfile(ctx context.Context, profile *domain.Profile) error
-	
+
 	// Attribute operations
 	GetAttributesByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Attribute, error)
 	SetAttribute(ctx context.Context, attr *domain.Attribute) error
@@ -42,14 +42,14 @@ type RoleRepository interface {
 	List(ctx context.Context, filter domain.RoleFilter) ([]domain.Role, int64, error)
 	Update(ctx context.Context, role *domain.Role) error
 	Delete(ctx context.Context, id uuid.UUID) error
-	
+
 	// Permission operations
 	GetPermissionsByRoleID(ctx context.Context, roleID uuid.UUID) ([]domain.Permission, error)
 	AssignPermission(ctx context.Context, roleID, permissionID uuid.UUID, assignedBy *uuid.UUID) error
 	RemovePermission(ctx context.Context, roleID, permissionID uuid.UUID) error
 	GetAllPermissions(ctx context.Context) ([]domain.Permission, error)
 	CreatePermission(ctx context.Context, perm *domain.Permission) error
-	
+
 	// User role operations
 	GetRolesByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Role, error)
 	AssignRoleToUser(ctx context.Context, userID, roleID uuid.UUID, assignedBy *uuid.UUID, expiresAt *interface{}) error
@@ -77,11 +77,11 @@ type SessionRepository interface {
 	Revoke(ctx context.Context, id uuid.UUID) error
 	RevokeAllUserSessions(ctx context.Context, userID uuid.UUID, exceptSessionID *uuid.UUID) error
 	UpdateActivity(ctx context.Context, id uuid.UUID) error
-	
+
 	// Client operations
 	CreateClient(ctx context.Context, client *domain.Client) error
 	GetClientByClientID(ctx context.Context, clientID string) (*domain.Client, error)
-	
+
 	// Identity Provider operations
 	CreateIdentityProvider(ctx context.Context, provider *domain.IdentityProvider) error
 	GetIdentityProvidersByTenant(ctx context.Context, tenantID uuid.UUID) ([]domain.IdentityProvider, error)
