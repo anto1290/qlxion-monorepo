@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/qlxion/qlxion-monorepo/pkg/errors"
+	"github.com/anto1290/qlxion-monorepo/pkg/errors"
 )
 
 // Status represents JSend status
