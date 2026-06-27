@@ -1,0 +1,299 @@
+# API Gateway Configuration
+server:
+  host: "0.0.0.0"
+  port: 8000
+  read_timeout: 10s
+  write_timeout: 10s
+  idle_timeout: 60s
+
+gateway:
+  name: "qlxion-gateway"
+  debug: false
+  enable_aggregator: true
+  enable_auth: true
+  request_timeout: 30s
+  max_idle_conns: 100
+  max_conns_per_host: 50
+  response_buffer_size: 1048576  # 1MB
+
+jwt:
+  secret: "${JWT_SECRET}"
+  token_header: "Authorization"
+  token_prefix: "Bearer "
+  allowed_algorithms:
+    - "HS256"
+    - "HS384"
+    - "HS512"
+  claims_headers:
+    user_id: "X-User-Id"
+    tenant_id: "X-Tenant-Id"
+    email: "X-User-Email"
+    roles: "X-User-Roles"
+
+redis:
+  host: "${REDIS_HOST:-localhost}"
+  port: ${REDIS_PORT:-6379}
+  password: "${REDIS_PASSWORD}"
+  db: 0
+
+rate_limit:
+  enabled: true
+  default_rps: 100
+  default_burst_size: 150
+  default_window: 1m
+  redis_key_prefix: "rate_limit"
+
+cors:
+  enabled: true
+  allowed_origins:
+    - "*"
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "PATCH"
+    - "DELETE"
+    - "OPTIONS"
+  allowed_headers:
+    - "*"
+  exposed_headers:
+    - "X-Request-ID"
+    - "X-RateLimit-Limit"
+    - "X-RateLimit-Remaining"
+  allow_credentials: false
+  max_age: 86400
+
+services:
+  - name: "auth-service"
+    host: "${AUTH_SERVICE_HOST:-localhost}"
+    port: ${AUTH_SERVICE_PORT:-8001}
+    protocol: "http"
+    health_check: "/health"
+    endpoints:
+      - path: "/auth/login"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/auth/login"
+        requires_auth: false
+        rate_limit:
+          requests_per_second: 10
+          burst_size: 20
+          window: 1m
+
+      - path: "/auth/register"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/auth/register"
+        requires_auth: false
+        rate_limit:
+          requests_per_second: 5
+          burst_size: 10
+          window: 1m
+
+      - path: "/auth/refresh"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/auth/refresh"
+        requires_auth: false
+
+      - path: "/auth/logout"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/auth/logout"
+        requires_auth: true
+
+      - path: "/auth/me"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/auth/me"
+        requires_auth: true
+
+      - path: "/auth/password/change"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/auth/password/change"
+        requires_auth: true
+
+      # User Management
+      - path: "/users"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/users"
+        requires_auth: true
+        required_roles:
+          - "ROLE_ADMIN"
+          - "ROLE_SUPER_ADMIN"
+
+      - path: "/users"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/users"
+        requires_auth: true
+        required_roles:
+          - "ROLE_ADMIN"
+          - "ROLE_SUPER_ADMIN"
+
+      - path: "/users/{id}"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/users/{id}"
+        requires_auth: true
+
+      - path: "/users/{id}"
+        method: "PUT"
+        backend: "auth-service"
+        backend_path: "/v1/users/{id}"
+        requires_auth: true
+
+      - path: "/users/{id}"
+        method: "DELETE"
+        backend: "auth-service"
+        backend_path: "/v1/users/{id}"
+        requires_auth: true
+        required_roles:
+          - "ROLE_ADMIN"
+          - "ROLE_SUPER_ADMIN"
+
+      - path: "/users/{id}/roles"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/users/{id}/roles"
+        requires_auth: true
+
+      - path: "/users/{id}/roles"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/users/{id}/roles"
+        requires_auth: true
+        required_roles:
+          - "ROLE_ADMIN"
+          - "ROLE_SUPER_ADMIN"
+
+      # Role Management
+      - path: "/roles"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/roles"
+        requires_auth: true
+
+      - path: "/roles"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/roles"
+        requires_auth: true
+        required_roles:
+          - "ROLE_SUPER_ADMIN"
+
+      - path: "/roles/{id}"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/roles/{id}"
+        requires_auth: true
+
+      - path: "/roles/{id}"
+        method: "PUT"
+        backend: "auth-service"
+        backend_path: "/v1/roles/{id}"
+        requires_auth: true
+        required_roles:
+          - "ROLE_SUPER_ADMIN"
+
+      - path: "/roles/{id}"
+        method: "DELETE"
+        backend: "auth-service"
+        backend_path: "/v1/roles/{id}"
+        requires_auth: true
+        required_roles:
+          - "ROLE_SUPER_ADMIN"
+
+      - path: "/roles/{id}/permissions"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/roles/{id}/permissions"
+        requires_auth: true
+
+      - path: "/roles/{id}/permissions"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/roles/{id}/permissions"
+        requires_auth: true
+        required_roles:
+          - "ROLE_SUPER_ADMIN"
+
+      # Permission Management
+      - path: "/permissions"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/permissions"
+        requires_auth: true
+
+      # Tenant Management
+      - path: "/tenants"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/tenants"
+        requires_auth: true
+        required_roles:
+          - "ROLE_SUPER_ADMIN"
+
+      - path: "/tenants"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/tenants"
+        requires_auth: true
+        required_roles:
+          - "ROLE_SUPER_ADMIN"
+
+      - path: "/tenants/{id}"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/tenants/{id}"
+        requires_auth: true
+
+      - path: "/tenants/{id}"
+        method: "PUT"
+        backend: "auth-service"
+        backend_path: "/v1/tenants/{id}"
+        requires_auth: true
+        required_roles:
+          - "ROLE_SUPER_ADMIN"
+
+      # Session Management
+      - path: "/sessions"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/sessions"
+        requires_auth: true
+
+      - path: "/sessions/{id}/revoke"
+        method: "POST"
+        backend: "auth-service"
+        backend_path: "/v1/sessions/{id}/revoke"
+        requires_auth: true
+
+      # Audit Logs
+      - path: "/audit-logs"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/audit-logs"
+        requires_auth: true
+        required_roles:
+          - "ROLE_ADMIN"
+          - "ROLE_SUPER_ADMIN"
+
+      # OAuth / Identity Providers
+      - path: "/auth/oauth/{provider}/authorize"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/auth/oauth/{provider}/authorize"
+        requires_auth: false
+
+      - path: "/auth/oauth/{provider}/callback"
+        method: "GET"
+        backend: "auth-service"
+        backend_path: "/v1/auth/oauth/{provider}/callback"
+        requires_auth: false
+
+    headers:
+      X-Gateway-Source: "qlxion-gateway"
+      X-Gateway-Version: "1.0.0"

@@ -1,0 +1,1301 @@
+openapi: 3.0.3
+info:
+  title: Qlxion API
+  description: |
+    Qlxion API Documentation - API Gateway dan Auth Service.
+    
+    Semua endpoint yang dilindungi (Bearer Auth) memerlukan header:
+    `Authorization: Bearer <access_token>`
+    
+    Gateway akan meneruskan claims JWT ke backend services melalui header:
+    - `X-User-Id`: UUID user
+    - `X-Tenant-Id`: UUID tenant
+    - `X-User-Email`: Email user
+    - `X-User-Roles`: Comma-separated roles
+  version: 1.0.0
+  contact:
+    name: Qlxion Team
+    email: dev@qlxion.com
+
+servers:
+  - url: http://localhost:8000
+    description: Local development (API Gateway)
+  - url: http://localhost:8001
+    description: Local development (Auth Service direct)
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ============================================
+  # Health
+  # ============================================
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check API Gateway health status
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  # ============================================
+  # Authentication
+  # ============================================
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return JWT tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: User registration
+      description: Register a new user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh token
+      description: Get new access token using refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Revoke current session
+      responses:
+        '204':
+          description: Logout successful
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Get authenticated user information
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /auth/password/change:
+    post:
+      tags:
+        - Authentication
+      summary: Change password
+      description: Change user password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+
+  # ============================================
+  # Users
+  # ============================================
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List users
+      description: Get paginated list of users
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum: [0, 1, 2]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserResponse'
+
+    post:
+      tags:
+        - Users
+      summary: Create user
+      description: Create a new user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user
+      description: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Users
+      summary: Update user
+      description: Update user information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated
+
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      description: Soft delete a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deleted
+
+  /users/{id}/roles:
+    get:
+      tags:
+        - Users
+      summary: Get user roles
+      description: Get roles assigned to a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+
+    post:
+      tags:
+        - Users
+      summary: Assign role
+      description: Assign a role to a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Role assigned
+
+  # ============================================
+  # Roles
+  # ============================================
+  /roles:
+    get:
+      tags:
+        - Roles
+      summary: List roles
+      description: Get paginated list of roles
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of roles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoleResponse'
+
+    post:
+      tags:
+        - Roles
+      summary: Create role
+      description: Create a new role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Role created
+
+  /roles/{id}:
+    get:
+      tags:
+        - Roles
+      summary: Get role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Role found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+
+    put:
+      tags:
+        - Roles
+      summary: Update role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: Role updated
+
+    delete:
+      tags:
+        - Roles
+      summary: Delete role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Role deleted
+
+  /roles/{id}/permissions:
+    get:
+      tags:
+        - Roles
+      summary: Get role permissions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Role permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+
+    post:
+      tags:
+        - Roles
+      summary: Assign permission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permission_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Permission assigned
+
+  # ============================================
+  # Permissions
+  # ============================================
+  /permissions:
+    get:
+      tags:
+        - Permissions
+      summary: List permissions
+      responses:
+        '200':
+          description: List of permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+
+    post:
+      tags:
+        - Permissions
+      summary: Create permission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePermissionRequest'
+      responses:
+        '201':
+          description: Permission created
+
+  # ============================================
+  # Tenants
+  # ============================================
+  /tenants:
+    get:
+      tags:
+        - Tenants
+      summary: List tenants
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTenantResponse'
+
+    post:
+      tags:
+        - Tenants
+      summary: Create tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantRequest'
+      responses:
+        '201':
+          description: Tenant created
+
+  /tenants/{id}:
+    get:
+      tags:
+        - Tenants
+      summary: Get tenant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tenant found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+
+    put:
+      tags:
+        - Tenants
+      summary: Update tenant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTenantRequest'
+      responses:
+        '200':
+          description: Tenant updated
+
+    delete:
+      tags:
+        - Tenants
+      summary: Delete tenant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Tenant deleted
+
+  # ============================================
+  # Sessions
+  # ============================================
+  /sessions:
+    get:
+      tags:
+        - Sessions
+      summary: List sessions
+      parameters:
+        - name: device_type
+          in: query
+          schema:
+            type: string
+            enum: [mobile, desktop, web]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, revoked]
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSessionResponse'
+
+  /sessions/{id}/revoke:
+    post:
+      tags:
+        - Sessions
+      summary: Revoke session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session revoked
+
+  # ============================================
+  # Audit Logs
+  # ============================================
+  /audit-logs:
+    get:
+      tags:
+        - Audit Logs
+      summary: List audit logs
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: resource
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of audit logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogResponse'
+
+components:
+  # ============================================
+  # Security Schemes
+  # ============================================
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # ============================================
+  # Schemas
+  # ============================================
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+          example: api-gateway
+        time:
+          type: string
+          format: date-time
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: securePassword123
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        device_name:
+          type: string
+          nullable: true
+        device_type:
+          type: string
+          enum: [mobile, desktop, web]
+          nullable: true
+
+    RegisterRequest:
+      type: object
+      required:
+        - tenant_id
+        - full_name
+        - email
+        - username
+        - password
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          example: johndoe
+        password:
+          type: string
+          format: password
+          minLength: 8
+        phone:
+          type: string
+          nullable: true
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - old_password
+        - new_password
+      properties:
+        old_password:
+          type: string
+        new_password:
+          type: string
+          minLength: 8
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          $ref: '#/components/schemas/TokenPair'
+
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          description: Token expiry in seconds
+          example: 900
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        avatar_url:
+          type: string
+          nullable: true
+        is_email_verified:
+          type: boolean
+        is_phone_verified:
+          type: boolean
+        status:
+          type: integer
+          enum: [0, 1, 2]
+          description: 0=BLOCKED, 1=ACTIVE, 2=PENDING
+        last_login_at:
+          type: string
+          format: date-time
+          nullable: true
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        profile:
+          $ref: '#/components/schemas/Profile'
+        created_at:
+          type: string
+          format: date-time
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        avatar:
+          type: string
+          nullable: true
+        full_name:
+          type: string
+          nullable: true
+        nik_number:
+          type: string
+          nullable: true
+        place_birth:
+          type: string
+          nullable: true
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        mobile:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        zip_code:
+          type: string
+          nullable: true
+        extras:
+          type: object
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        code:
+          type: string
+          example: ROLE_ADMIN
+        name:
+          type: string
+          example: Administrator
+        description:
+          type: string
+          nullable: true
+        is_system_defined:
+          type: boolean
+        status:
+          type: integer
+          enum: [0, 1]
+          description: 0=INACTIVE, 1=ACTIVE
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+        created_at:
+          type: string
+          format: date-time
+
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        resource:
+          type: string
+          example: user
+        action:
+          type: string
+          example: create
+        description:
+          type: string
+          nullable: true
+        is_system_defined:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: PTA
+        name:
+          type: string
+          example: Perusahaan A
+        domain:
+          type: string
+          nullable: true
+        config:
+          type: object
+        status:
+          type: integer
+          enum: [0, 1, 2]
+          description: 0=INACTIVE, 1=ACTIVE, 2=SUSPENDED
+        created_at:
+          type: string
+          format: date-time
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        device_name:
+          type: string
+          nullable: true
+        device_type:
+          type: string
+          enum: [mobile, desktop, web]
+          nullable: true
+        ip_address:
+          type: string
+          nullable: true
+        user_agent:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_activity_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+        action:
+          type: string
+          example: LOGIN
+        resource:
+          type: string
+          nullable: true
+        resource_id:
+          type: string
+          format: uuid
+          nullable: true
+        details:
+          type: object
+        ip_address:
+          type: string
+          nullable: true
+        user_agent:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    # Request schemas
+    CreateUserRequest:
+      type: object
+      required:
+        - tenant_id
+        - full_name
+        - email
+        - username
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          default: 1
+        role_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        avatar_url:
+          type: string
+          nullable: true
+        status:
+          type: integer
+        profile:
+          $ref: '#/components/schemas/Profile'
+
+    CreateRoleRequest:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          example: ROLE_MANAGER
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        permission_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    UpdateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: integer
+
+    CreatePermissionRequest:
+      type: object
+      required:
+        - resource
+        - action
+      properties:
+        resource:
+          type: string
+        action:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    CreateTenantRequest:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          example: PTA
+        name:
+          type: string
+        domain:
+          type: string
+          nullable: true
+        config:
+          type: object
+
+    UpdateTenantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        domain:
+          type: string
+          nullable: true
+        config:
+          type: object
+        status:
+          type: integer
+
+    # Response wrappers
+    PaginatedUserResponse:
+      allOf:
+        - $ref: '#/components/schemas/JSendSuccess'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+            meta:
+              $ref: '#/components/schemas/PaginationMeta'
+
+    PaginatedRoleResponse:
+      allOf:
+        - $ref: '#/components/schemas/JSendSuccess'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Role'
+            meta:
+              $ref: '#/components/schemas/PaginationMeta'
+
+    PaginatedTenantResponse:
+      allOf:
+        - $ref: '#/components/schemas/JSendSuccess'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tenant'
+            meta:
+              $ref: '#/components/schemas/PaginationMeta'
+
+    PaginatedSessionResponse:
+      allOf:
+        - $ref: '#/components/schemas/JSendSuccess'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Session'
+            meta:
+              $ref: '#/components/schemas/PaginationMeta'
+
+    PaginatedAuditLogResponse:
+      allOf:
+        - $ref: '#/components/schemas/JSendSuccess'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/AuditLog'
+            meta:
+              $ref: '#/components/schemas/PaginationMeta'
+
+    JSendSuccess:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        timestamp:
+          type: string
+          format: date-time
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+  # ============================================
+  # Responses
+  # ============================================
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: error
+              code:
+                type: string
+                example: UNAUTHORIZED
+              message:
+                type: string
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: error
+              code:
+                type: string
+                example: NOT_FOUND
+              message:
+                type: string
+
+    ConflictError:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: error
+              code:
+                type: string
+                example: CONFLICT
+              message:
+                type: string

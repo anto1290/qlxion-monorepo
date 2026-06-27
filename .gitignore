@@ -1,0 +1,65 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.html
+
+# Build directories
+bin/
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+vendor/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Docker
+.docker/
+
+# Kubernetes secrets (actual secrets, not examples)
+deploy/k8s/shared/secrets.yaml
+!deploy/k8s/shared/secrets.example.yaml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# API Docs generated
+api-docs/*.html
+api-docs/*.json
+
+# Go workspace
+# go.work.sum
