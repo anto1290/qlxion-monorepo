@@ -13,6 +13,7 @@ import (
 	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/config"
 	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/middleware"
 	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/proxy"
+	"github.com/anto1290/qlxion-monorepo/pkg/errors"
 	"github.com/anto1290/qlxion-monorepo/pkg/logger"
 	"github.com/anto1290/qlxion-monorepo/pkg/response"
 	"github.com/redis/go-redis/v9"
@@ -179,14 +180,14 @@ func createEndpointHandler(
 		// Forward request to backend
 		pr, err := rp.Forward(r.Context(), serviceName, endpoint.BackendPath, r)
 		if err != nil {
-			response.JSONError(w, response.New(response.ErrServiceUnavailable,
-				fmt.Sprintf("Service '%s' unavailable", serviceName)).WithError(err))
+			response.JSONError(w, errors.Wrap(errors.ErrServiceUnavailable,
+				fmt.Sprintf("Service '%s' unavailable", serviceName), err))
 			return
 		}
 
 		// Check if backend returned error status
 		if pr.StatusCode >= 500 {
-			response.JSONError(w, response.New(response.ErrServiceUnavailable,
+			response.JSONError(w, errors.New(errors.ErrServiceUnavailable,
 				fmt.Sprintf("Service '%s' returned error", serviceName)))
 			return
 		}
@@ -208,7 +209,7 @@ func recoveryMiddleware(log *logger.Logger) func(http.Handler) http.Handler {
 						Str("method", r.Method).
 						Msg("Panic recovered")
 
-					response.JSONError(w, response.New(response.ErrInternal, "Internal server error"))
+					response.JSONError(w, errors.New(errors.ErrInternal, "Internal server error"))
 				}
 			}()
 			next.ServeHTTP(w, r)

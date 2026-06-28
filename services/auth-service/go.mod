@@ -3,16 +3,16 @@ module github.com/anto1290/qlxion-monorepo/services/auth-service
 go 1.25.0
 
 require (
-	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/anto1290/qlxion-monorepo v0.0.0-20260627192357-d96e879c633c
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/rs/zerolog v1.32.0
 	golang.org/x/crypto v0.48.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.2.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

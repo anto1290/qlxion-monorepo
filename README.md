@@ -104,7 +104,7 @@ cp .env.example .env
 make docker-up
 
 # Atau menggunakan docker-compose langsung
-cd deploy && docker-compose up --build
+cd deploy && docker compose up --build
 ```
 
 Services akan tersedia di:

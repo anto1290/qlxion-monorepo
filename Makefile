@@ -65,7 +65,7 @@ dev-gateway: ## Run API Gateway in development mode
 
 dev-auth: ## Run Auth Service in development mode
 	@echo "$(BLUE)Starting Auth Service (dev)...$(RESET)"
-	cd $(AUTH_DIR) && JWT_SECRET=dev-secret go run cmd/auth/main.go
+	cd $(AUTH_DIR) && JWT_SECRET=dev-secret DB_PASSWORD=postgres go run cmd/auth/main.go
 
 dev-all: ## Run all services with docker-compose
 	@echo "$(BLUE)Starting all services...$(RESET)"

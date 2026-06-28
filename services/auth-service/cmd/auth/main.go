@@ -6,16 +6,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/anto1290/qlxion-monorepo/pkg/auth"
 	"github.com/anto1290/qlxion-monorepo/pkg/database"
+	appErrors "github.com/anto1290/qlxion-monorepo/pkg/errors"
 	"github.com/anto1290/qlxion-monorepo/pkg/logger"
 	"github.com/anto1290/qlxion-monorepo/pkg/response"
 	handler "github.com/anto1290/qlxion-monorepo/services/auth-service/internal/delivery/http"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository/postgres"
-	redisRepo "github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository/redis"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/usecase"
 )
 
@@ -34,12 +35,15 @@ func main() {
 
 	// Connect to PostgreSQL
 	dbCfg := database.PostgresConfig{
-		Host:     cfg.DBHost,
-		Port:     cfg.DBPort,
-		User:     cfg.DBUser,
-		Password: cfg.DBPassword,
-		Database: cfg.DBName,
-		SSLMode:  cfg.DBSSLMode,
+		Host:            cfg.DBHost,
+		Port:            cfg.DBPort,
+		User:            cfg.DBUser,
+		Password:        cfg.DBPassword,
+		Database:        cfg.DBName,
+		SSLMode:         cfg.DBSSLMode,
+		MaxOpenConns:    int32(cfg.DBMaxOpenConns),
+		MaxIdleConns:    int32(cfg.DBMaxIdleConns),
+		ConnMaxLifetime: time.Duration(cfg.DBConnMaxSeconds) * time.Second,
 	}
 
 	db, err := database.NewPostgresPool(dbCfg)
@@ -64,7 +68,6 @@ func main() {
 	tenantRepo := postgres.NewTenantRepo(db)
 	sessionRepo := postgres.NewSessionRepo(db)
 	auditRepo := postgres.NewAuditRepo(db)
-	cacheRepo := redisRepo.NewCacheRepo(redisClient, "auth")
 
 	// Initialize usecases
 	jwtConfig := auth.JWTConfig{
@@ -163,38 +166,44 @@ func main() {
 
 // Config holds service configuration
 type Config struct {
-	Host          string
-	Port          int
-	Debug         bool
-	DBHost        string
-	DBPort        int
-	DBUser        string
-	DBPassword    string
-	DBName        string
-	DBSSLMode     string
-	RedisHost     string
-	RedisPort     int
-	RedisPassword string
-	RedisDB       int
-	JWTSecret     string
+	Host             string
+	Port             int
+	Debug            bool
+	DBHost           string
+	DBPort           int
+	DBUser           string
+	DBPassword       string
+	DBName           string
+	DBSSLMode        string
+	DBMaxOpenConns   int
+	DBMaxIdleConns   int
+	DBConnMaxSeconds int
+	RedisHost        string
+	RedisPort        int
+	RedisPassword    string
+	RedisDB          int
+	JWTSecret        string
 }
 
 func loadConfig() Config {
 	return Config{
-		Host:          getEnv("AUTH_SERVICE_HOST", "0.0.0.0"),
-		Port:          getEnvInt("AUTH_SERVICE_PORT", 8001),
-		Debug:         getEnvBool("AUTH_SERVICE_DEBUG", false),
-		DBHost:        getEnv("DB_HOST", "localhost"),
-		DBPort:        getEnvInt("DB_PORT", 5432),
-		DBUser:        getEnv("DB_USER", "postgres"),
-		DBPassword:    getEnv("DB_PASSWORD", "postgres"),
-		DBName:        getEnv("DB_NAME", "auth_db"),
-		DBSSLMode:     getEnv("DB_SSLMODE", "disable"),
-		RedisHost:     getEnv("REDIS_HOST", "localhost"),
-		RedisPort:     getEnvInt("REDIS_PORT", 6379),
-		RedisPassword: getEnv("REDIS_PASSWORD", ""),
-		RedisDB:       getEnvInt("REDIS_DB", 0),
-		JWTSecret:     getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		Host:             getEnv("AUTH_SERVICE_HOST", "0.0.0.0"),
+		Port:             getEnvInt("AUTH_SERVICE_PORT", 8001),
+		Debug:            getEnvBool("AUTH_SERVICE_DEBUG", false),
+		DBHost:           getEnv("DB_HOST", "localhost"),
+		DBPort:           getEnvInt("DB_PORT", 5432),
+		DBUser:           getEnv("DB_USER", "postgres"),
+		DBPassword:       getEnv("DB_PASSWORD", "postgres"),
+		DBName:           getEnv("DB_NAME", "auth_db"),
+		DBSSLMode:        getEnv("DB_SSLMODE", "disable"),
+		DBMaxOpenConns:   getEnvInt("DB_MAX_OPEN_CONNS", 25),
+		DBMaxIdleConns:   getEnvInt("DB_MAX_IDLE_CONNS", 10),
+		DBConnMaxSeconds: getEnvInt("DB_CONN_MAX_LIFETIME_SECONDS", 300),
+		RedisHost:        getEnv("REDIS_HOST", "localhost"),
+		RedisPort:        getEnvInt("REDIS_PORT", 6379),
+		RedisPassword:    getEnv("REDIS_PASSWORD", ""),
+		RedisDB:          getEnvInt("REDIS_DB", 0),
+		JWTSecret:        getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 	}
 }
 
@@ -206,10 +215,20 @@ func getEnv(key, defaultValue string) string {
 }
 
 func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil {
+			return parsed
+		}
+	}
 	return defaultValue
 }
 
 func getEnvBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := strconv.ParseBool(value); err == nil {
+			return parsed
+		}
+	}
 	return defaultValue
 }
 
@@ -222,7 +241,7 @@ func recoveryMiddleware(log *logger.Logger) func(http.Handler) http.Handler {
 						Interface("error", err).
 						Str("path", r.URL.Path).
 						Msg("Panic recovered")
-					response.JSONError(w, response.New(response.ErrInternal, "Internal server error"))
+					response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Internal server error"))
 				}
 			}()
 			next.ServeHTTP(w, r)
