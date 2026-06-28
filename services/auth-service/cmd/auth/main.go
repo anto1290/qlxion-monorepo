@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -34,12 +35,15 @@ func main() {
 
 	// Connect to PostgreSQL
 	dbCfg := database.PostgresConfig{
-		Host:     cfg.DBHost,
-		Port:     cfg.DBPort,
-		User:     cfg.DBUser,
-		Password: cfg.DBPassword,
-		Database: cfg.DBName,
-		SSLMode:  cfg.DBSSLMode,
+		Host:            cfg.DBHost,
+		Port:            cfg.DBPort,
+		User:            cfg.DBUser,
+		Password:        cfg.DBPassword,
+		Database:        cfg.DBName,
+		SSLMode:         cfg.DBSSLMode,
+		MaxOpenConns:    int32(cfg.DBMaxOpenConns),
+		MaxIdleConns:    int32(cfg.DBMaxIdleConns),
+		ConnMaxLifetime: time.Duration(cfg.DBConnMaxSeconds) * time.Second,
 	}
 
 	db, err := database.NewPostgresPool(dbCfg)
@@ -162,38 +166,44 @@ func main() {
 
 // Config holds service configuration
 type Config struct {
-	Host          string
-	Port          int
-	Debug         bool
-	DBHost        string
-	DBPort        int
-	DBUser        string
-	DBPassword    string
-	DBName        string
-	DBSSLMode     string
-	RedisHost     string
-	RedisPort     int
-	RedisPassword string
-	RedisDB       int
-	JWTSecret     string
+	Host             string
+	Port             int
+	Debug            bool
+	DBHost           string
+	DBPort           int
+	DBUser           string
+	DBPassword       string
+	DBName           string
+	DBSSLMode        string
+	DBMaxOpenConns   int
+	DBMaxIdleConns   int
+	DBConnMaxSeconds int
+	RedisHost        string
+	RedisPort        int
+	RedisPassword    string
+	RedisDB          int
+	JWTSecret        string
 }
 
 func loadConfig() Config {
 	return Config{
-		Host:          getEnv("AUTH_SERVICE_HOST", "0.0.0.0"),
-		Port:          getEnvInt("AUTH_SERVICE_PORT", 8001),
-		Debug:         getEnvBool("AUTH_SERVICE_DEBUG", false),
-		DBHost:        getEnv("DB_HOST", "localhost"),
-		DBPort:        getEnvInt("DB_PORT", 5432),
-		DBUser:        getEnv("DB_USER", "postgres"),
-		DBPassword:    getEnv("DB_PASSWORD", "postgres"),
-		DBName:        getEnv("DB_NAME", "auth_db"),
-		DBSSLMode:     getEnv("DB_SSLMODE", "disable"),
-		RedisHost:     getEnv("REDIS_HOST", "localhost"),
-		RedisPort:     getEnvInt("REDIS_PORT", 6379),
-		RedisPassword: getEnv("REDIS_PASSWORD", ""),
-		RedisDB:       getEnvInt("REDIS_DB", 0),
-		JWTSecret:     getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		Host:             getEnv("AUTH_SERVICE_HOST", "0.0.0.0"),
+		Port:             getEnvInt("AUTH_SERVICE_PORT", 8001),
+		Debug:            getEnvBool("AUTH_SERVICE_DEBUG", false),
+		DBHost:           getEnv("DB_HOST", "localhost"),
+		DBPort:           getEnvInt("DB_PORT", 5432),
+		DBUser:           getEnv("DB_USER", "postgres"),
+		DBPassword:       getEnv("DB_PASSWORD", "postgres"),
+		DBName:           getEnv("DB_NAME", "auth_db"),
+		DBSSLMode:        getEnv("DB_SSLMODE", "disable"),
+		DBMaxOpenConns:   getEnvInt("DB_MAX_OPEN_CONNS", 25),
+		DBMaxIdleConns:   getEnvInt("DB_MAX_IDLE_CONNS", 10),
+		DBConnMaxSeconds: getEnvInt("DB_CONN_MAX_LIFETIME_SECONDS", 300),
+		RedisHost:        getEnv("REDIS_HOST", "localhost"),
+		RedisPort:        getEnvInt("REDIS_PORT", 6379),
+		RedisPassword:    getEnv("REDIS_PASSWORD", ""),
+		RedisDB:          getEnvInt("REDIS_DB", 0),
+		JWTSecret:        getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 	}
 }
 
@@ -205,10 +215,20 @@ func getEnv(key, defaultValue string) string {
 }
 
 func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil {
+			return parsed
+		}
+	}
 	return defaultValue
 }
 
 func getEnvBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := strconv.ParseBool(value); err == nil {
+			return parsed
+		}
+	}
 	return defaultValue
 }
 
