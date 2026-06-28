@@ -11,11 +11,11 @@ import (
 
 	"github.com/anto1290/qlxion-monorepo/pkg/auth"
 	"github.com/anto1290/qlxion-monorepo/pkg/database"
+	appErrors "github.com/anto1290/qlxion-monorepo/pkg/errors"
 	"github.com/anto1290/qlxion-monorepo/pkg/logger"
 	"github.com/anto1290/qlxion-monorepo/pkg/response"
 	handler "github.com/anto1290/qlxion-monorepo/services/auth-service/internal/delivery/http"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository/postgres"
-	redisRepo "github.com/anto1290/qlxion-monorepo/services/auth-service/internal/repository/redis"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/usecase"
 )
 
@@ -64,7 +64,6 @@ func main() {
 	tenantRepo := postgres.NewTenantRepo(db)
 	sessionRepo := postgres.NewSessionRepo(db)
 	auditRepo := postgres.NewAuditRepo(db)
-	cacheRepo := redisRepo.NewCacheRepo(redisClient, "auth")
 
 	// Initialize usecases
 	jwtConfig := auth.JWTConfig{
@@ -222,7 +221,7 @@ func recoveryMiddleware(log *logger.Logger) func(http.Handler) http.Handler {
 						Interface("error", err).
 						Str("path", r.URL.Path).
 						Msg("Panic recovered")
-					response.JSONError(w, response.New(response.ErrInternal, "Internal server error"))
+					response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Internal server error"))
 				}
 			}()
 			next.ServeHTTP(w, r)

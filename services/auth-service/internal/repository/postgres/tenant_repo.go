@@ -84,7 +84,7 @@ func (r *TenantRepo) GetByCode(ctx context.Context, code string) (*domain.Tenant
 }
 
 // GetByDomain gets tenant by domain
-func (r *TenantRepo) GetByDomain(ctx context.Context, domain string) (*domain.Tenant, error) {
+func (r *TenantRepo) GetByDomain(ctx context.Context, tenantDomain string) (*domain.Tenant, error) {
 	query := `
 		SELECT id, code, name, domain, config, status,
 			created_by, updated_by, created_at, updated_at, deleted_at
@@ -92,7 +92,7 @@ func (r *TenantRepo) GetByDomain(ctx context.Context, domain string) (*domain.Te
 	`
 
 	tenant := &domain.Tenant{}
-	err := r.db.QueryRow(ctx, query, domain).Scan(
+	err := r.db.QueryRow(ctx, query, tenantDomain).Scan(
 		&tenant.ID, &tenant.Code, &tenant.Name, &tenant.Domain,
 		&tenant.Config, &tenant.Status, &tenant.CreatedBy, &tenant.UpdatedBy,
 		&tenant.CreatedAt, &tenant.UpdatedAt, &tenant.DeletedAt,

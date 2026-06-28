@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	appErrors "github.com/anto1290/qlxion-monorepo/pkg/errors"
 	"github.com/anto1290/qlxion-monorepo/pkg/response"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/usecase"
@@ -70,10 +71,10 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, total, err := h.userUC.ListUsers(ctx, filter)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to list users").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to list users").WithError(err))
 		}
 		return
 	}
@@ -86,17 +87,17 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req usecase.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.JSONError(w, response.New(response.ErrBadRequest, "Invalid request body").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrBadRequest, "Invalid request body").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	user, err := h.userUC.CreateUser(ctx, req)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to create user").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to create user").WithError(err))
 		}
 		return
 	}
@@ -108,17 +109,17 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid user ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid user ID").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	user, err := h.userUC.GetUser(ctx, id)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to get user").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to get user").WithError(err))
 		}
 		return
 	}
@@ -130,23 +131,23 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid user ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid user ID").WithError(err))
 		return
 	}
 
 	var req usecase.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.JSONError(w, response.New(response.ErrBadRequest, "Invalid request body").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrBadRequest, "Invalid request body").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	user, err := h.userUC.UpdateUser(ctx, id, req)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to update user").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to update user").WithError(err))
 		}
 		return
 	}
@@ -158,7 +159,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid user ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid user ID").WithError(err))
 		return
 	}
 
@@ -167,10 +168,10 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	if err := h.userUC.DeleteUser(ctx, id, deletedBy); err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to delete user").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to delete user").WithError(err))
 		}
 		return
 	}
@@ -182,17 +183,17 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) GetUserRoles(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid user ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid user ID").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	roles, err := h.userUC.GetUserRoles(ctx, id)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to get user roles").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to get user roles").WithError(err))
 		}
 		return
 	}
@@ -204,7 +205,7 @@ func (h *UserHandler) GetUserRoles(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) AssignRole(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid user ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid user ID").WithError(err))
 		return
 	}
 
@@ -212,16 +213,16 @@ func (h *UserHandler) AssignRole(w http.ResponseWriter, r *http.Request) {
 		RoleID uuid.UUID `json:"role_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.JSONError(w, response.New(response.ErrBadRequest, "Invalid request body").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrBadRequest, "Invalid request body").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	if err := h.userUC.AssignRole(ctx, id, req.RoleID, nil); err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to assign role").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to assign role").WithError(err))
 		}
 		return
 	}
@@ -233,22 +234,22 @@ func (h *UserHandler) AssignRole(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) RemoveRole(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid user ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid user ID").WithError(err))
 		return
 	}
 
 	roleID, err := uuid.Parse(r.PathValue("roleId"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid role ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid role ID").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	if err := h.userUC.RemoveRole(ctx, id, roleID); err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to remove role").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to remove role").WithError(err))
 		}
 		return
 	}

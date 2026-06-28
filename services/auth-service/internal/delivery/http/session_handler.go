@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/anto1290/qlxion-monorepo/pkg/auth"
+	appErrors "github.com/anto1290/qlxion-monorepo/pkg/errors"
 	"github.com/anto1290/qlxion-monorepo/pkg/response"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/usecase"
@@ -31,7 +32,7 @@ func (h *SessionHandler) RegisterRoutes(mux *http.ServeMux) {
 func (h *SessionHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
 	claims, ok := auth.ExtractClaimsFromContext(r.Context())
 	if !ok {
-		response.JSONError(w, response.New(response.ErrUnauthorized, "Not authenticated"))
+		response.JSONError(w, appErrors.New(appErrors.ErrUnauthorized, "Not authenticated"))
 		return
 	}
 
@@ -64,10 +65,10 @@ func (h *SessionHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
 
 	sessions, total, err := h.sessionUC.ListSessions(ctx, claims.UserID, filter)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to list sessions").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to list sessions").WithError(err))
 		}
 		return
 	}
@@ -80,16 +81,16 @@ func (h *SessionHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
 func (h *SessionHandler) RevokeSession(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid session ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid session ID").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	if err := h.sessionUC.RevokeSession(ctx, id); err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to revoke session").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to revoke session").WithError(err))
 		}
 		return
 	}
@@ -152,10 +153,10 @@ func (h *AuditHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
 
 	logs, total, err := h.auditUC.ListAuditLogs(ctx, filter)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to list audit logs").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to list audit logs").WithError(err))
 		}
 		return
 	}

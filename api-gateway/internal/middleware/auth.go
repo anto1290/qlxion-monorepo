@@ -2,12 +2,12 @@ package middleware
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/anto1290/qlxion-monorepo/api-gateway/internal/config"
 	"github.com/anto1290/qlxion-monorepo/pkg/auth"
+	"github.com/anto1290/qlxion-monorepo/pkg/errors"
 	"github.com/anto1290/qlxion-monorepo/pkg/response"
 )
 
@@ -18,10 +18,7 @@ func Auth(jwtConfig config.JWTConfig) func(http.Handler) http.Handler {
 			// Extract token from header
 			authHeader := r.Header.Get(jwtConfig.TokenHeader)
 			if authHeader == "" {
-				resp := response.Error(response.New(response.ErrUnauthorized, "Missing authorization header"))
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(resp)
+				response.JSONError(w, errors.New(errors.ErrUnauthorized, "Missing authorization header"))
 				return
 			}
 
@@ -35,10 +32,7 @@ func Auth(jwtConfig config.JWTConfig) func(http.Handler) http.Handler {
 			// Validate token
 			claims, err := auth.ValidateToken(tokenString, jwtConfig.Secret)
 			if err != nil {
-				resp := response.Error(response.New(response.ErrTokenInvalid, "Invalid or expired token").WithDetail(err.Error()))
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(resp)
+				response.JSONError(w, errors.Wrap(errors.ErrTokenInvalid, "Invalid or expired token", err))
 				return
 			}
 
@@ -98,10 +92,7 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims, ok := auth.ExtractClaimsFromContext(r.Context())
 			if !ok {
-				resp := response.Error(response.New(response.ErrUnauthorized, "Authentication required"))
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(resp)
+				response.JSONError(w, errors.New(errors.ErrUnauthorized, "Authentication required"))
 				return
 			}
 
@@ -114,10 +105,7 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 			}
 
 			if !hasRole {
-				resp := response.Error(response.New(response.ErrForbidden, "Insufficient permissions"))
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusForbidden)
-				json.NewEncoder(w).Encode(resp)
+				response.JSONError(w, errors.New(errors.ErrForbidden, "Insufficient permissions"))
 				return
 			}
 

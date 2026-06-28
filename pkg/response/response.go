@@ -37,6 +37,39 @@ type Meta struct {
 	Order      string `json:"order,omitempty"`
 }
 
+// AppError is an alias for errors.AppError for backward compatibility.
+type AppError = errors.AppError
+
+type ErrorCode = errors.ErrorCode
+
+const (
+	ErrInternal           = errors.ErrInternal
+	ErrNotFound           = errors.ErrNotFound
+	ErrBadRequest         = errors.ErrBadRequest
+	ErrUnauthorized       = errors.ErrUnauthorized
+	ErrForbidden          = errors.ErrForbidden
+	ErrConflict           = errors.ErrConflict
+	ErrValidation         = errors.ErrValidation
+	ErrTooManyRequest     = errors.ErrTooManyRequest
+	ErrServiceUnavailable = errors.ErrServiceUnavailable
+	ErrInvalidCredentials = errors.ErrInvalidCredentials
+	ErrTokenExpired       = errors.ErrTokenExpired
+	ErrTokenInvalid       = errors.ErrTokenInvalid
+	ErrSessionRevoked     = errors.ErrSessionRevoked
+	ErrUserInactive       = errors.ErrUserInactive
+	ErrTenantInactive     = errors.ErrTenantInactive
+)
+
+// New creates a new AppError from errors package for backward compatibility.
+func New(code errors.ErrorCode, message string) *errors.AppError {
+	return errors.New(code, message)
+}
+
+// Wrap creates a wrapped AppError from errors package for backward compatibility.
+func Wrap(code errors.ErrorCode, message string, err error) *errors.AppError {
+	return errors.Wrap(code, message, err)
+}
+
 // Success returns a success response
 func Success(data interface{}) Response {
 	return Response{

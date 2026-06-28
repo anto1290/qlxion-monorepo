@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	appErrors "github.com/anto1290/qlxion-monorepo/pkg/errors"
 	"github.com/anto1290/qlxion-monorepo/pkg/response"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/domain"
 	"github.com/anto1290/qlxion-monorepo/services/auth-service/internal/usecase"
@@ -60,10 +61,10 @@ func (h *TenantHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 
 	tenants, total, err := h.tenantUC.ListTenants(ctx, filter)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to list tenants").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to list tenants").WithError(err))
 		}
 		return
 	}
@@ -76,17 +77,17 @@ func (h *TenantHandler) ListTenants(w http.ResponseWriter, r *http.Request) {
 func (h *TenantHandler) CreateTenant(w http.ResponseWriter, r *http.Request) {
 	var req usecase.CreateTenantRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.JSONError(w, response.New(response.ErrBadRequest, "Invalid request body").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrBadRequest, "Invalid request body").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	tenant, err := h.tenantUC.CreateTenant(ctx, req)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to create tenant").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to create tenant").WithError(err))
 		}
 		return
 	}
@@ -98,17 +99,17 @@ func (h *TenantHandler) CreateTenant(w http.ResponseWriter, r *http.Request) {
 func (h *TenantHandler) GetTenant(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid tenant ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid tenant ID").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	tenant, err := h.tenantUC.GetTenant(ctx, id)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to get tenant").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to get tenant").WithError(err))
 		}
 		return
 	}
@@ -120,23 +121,23 @@ func (h *TenantHandler) GetTenant(w http.ResponseWriter, r *http.Request) {
 func (h *TenantHandler) UpdateTenant(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid tenant ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid tenant ID").WithError(err))
 		return
 	}
 
 	var req usecase.UpdateTenantRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.JSONError(w, response.New(response.ErrBadRequest, "Invalid request body").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrBadRequest, "Invalid request body").WithError(err))
 		return
 	}
 
 	ctx := r.Context()
 	tenant, err := h.tenantUC.UpdateTenant(ctx, id, req)
 	if err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to update tenant").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to update tenant").WithError(err))
 		}
 		return
 	}
@@ -148,7 +149,7 @@ func (h *TenantHandler) UpdateTenant(w http.ResponseWriter, r *http.Request) {
 func (h *TenantHandler) DeleteTenant(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		response.JSONError(w, response.New(response.ErrValidation, "Invalid tenant ID").WithError(err))
+		response.JSONError(w, appErrors.New(appErrors.ErrValidation, "Invalid tenant ID").WithError(err))
 		return
 	}
 
@@ -156,10 +157,10 @@ func (h *TenantHandler) DeleteTenant(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	if err := h.tenantUC.DeleteTenant(ctx, id, deletedBy); err != nil {
-		if appErr, ok := err.(*response.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			response.JSONError(w, appErr)
 		} else {
-			response.JSONError(w, response.New(response.ErrInternal, "Failed to delete tenant").WithError(err))
+			response.JSONError(w, appErrors.New(appErrors.ErrInternal, "Failed to delete tenant").WithError(err))
 		}
 		return
 	}
